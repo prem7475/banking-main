@@ -36,6 +36,25 @@ interface CreditCard {
   cvv?: string
 }
 
+interface Transaction {
+  $id: string
+  id: string
+  name: string
+  paymentChannel: string
+  channel: string
+  type: 'debit' | 'credit'
+  accountId: string
+  cardId?: string
+  amount: number
+  pending: boolean
+  category: string
+  date: string
+  $createdAt: string
+  image: string
+  senderBankId: string
+  receiverBankId: string
+}
+
 interface AppContextType {
   bankAccounts: BankAccount[]
   setBankAccounts: React.Dispatch<React.SetStateAction<BankAccount[]>>
@@ -43,6 +62,8 @@ interface AppContextType {
   setConnectedBanks: React.Dispatch<React.SetStateAction<ConnectedBank[]>>
   creditCards: CreditCard[]
   setCreditCards: React.Dispatch<React.SetStateAction<CreditCard[]>>
+  transactions: Transaction[]
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -64,6 +85,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([])
   const [creditCards, setCreditCards] = useState<CreditCard[]>([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
   return (
     <AppContext.Provider value={{
@@ -72,7 +94,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       connectedBanks,
       setConnectedBanks,
       creditCards,
-      setCreditCards
+      setCreditCards,
+      transactions,
+      setTransactions
     }}>
       {children}
     </AppContext.Provider>

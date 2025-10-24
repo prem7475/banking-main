@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertCircle, CheckCircle, Loader2, Plus, CreditCard, Eye, EyeOff } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAppContext } from '@/lib/context/AppContext'
 
 const CreditCards = () => {
   const [showApplyModal, setShowApplyModal] = useState(false)
@@ -26,8 +27,8 @@ const CreditCards = () => {
   const [upiPin, setUpiPin] = useState('')
   const [pinError, setPinError] = useState('')
 
-  // Start with empty array - users must apply for their own cards
-  const [existingCards, setExistingCards] = useState([])
+  const { creditCards, setCreditCards } = useAppContext()
+  const [existingCards, setExistingCards] = useState(creditCards)
 
   const creditCardTypes = [
     { id: 'visa', name: 'Visa Credit Card', description: 'Accepted worldwide with comprehensive benefits' },
@@ -120,7 +121,9 @@ const CreditCards = () => {
         number: '**** **** **** ****', // Placeholder until approved
         cvv: '***' // Placeholder until approved
       }
-      setExistingCards([...existingCards, newCard])
+      const updatedCards = [...existingCards, newCard]
+      setExistingCards(updatedCards)
+      setCreditCards(updatedCards)
     } catch (error) {
       setApplicationStatus('error')
     } finally {
@@ -370,17 +373,17 @@ const CreditCards = () => {
                       <div className="flex justify-between text-xs opacity-60">
                         {showCardDetails[card.id] ? (
                           <>
-                            <span>{card.number.slice(0, 4)}</span>
-                            <span>{card.number.slice(4, 8)}</span>
-                            <span>{card.number.slice(8, 12)}</span>
-                            <span>{card.number.slice(12)}</span>
+                            <span>{card.number?.slice(0, 4) || '****'}</span>
+                            <span>{card.number?.slice(4, 8) || '****'}</span>
+                            <span>{card.number?.slice(8, 12) || '****'}</span>
+                            <span>{card.number?.slice(12) || '****'}</span>
                           </>
                         ) : (
                           <>
                             <span>****</span>
                             <span>****</span>
                             <span>****</span>
-                            <span>{card.number.slice(-4)}</span>
+                            <span>{card.number?.slice(-4) || '****'}</span>
                           </>
                         )}
                       </div>

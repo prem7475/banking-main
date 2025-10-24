@@ -8,287 +8,29 @@ import { formatAmount } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import React, { useState } from 'react'
+import { useAppContext } from '@/lib/context/AppContext'
 
 const TransactionHistory = ({ searchParams: { id, page }}:SearchParamProps) => {
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [selectedBank, setSelectedBank] = useState<string>('all');
   const currentPage = Number(page as string) || 1;
 
-  // Mock user data
-  const mockUser = {
-    $id: "mock-user-id",
-    userId: "mock-user-id",
-    firstName: "Prem",
-    lastName: "Narayani",
-    email: "prem.narayani@gmail.com",
-    name: "Prem Narayani",
-    dwollaCustomerUrl: "",
-    dwollaCustomerId: "",
-    address1: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    dateOfBirth: "",
-    ssn: "",
-  };
+  const { bankAccounts, creditCards, transactions, setTransactions } = useAppContext()
 
-  // Mock accounts data (same as home page and my-banks page)
-  const mockAccounts = [
-    {
-      id: "mock-account-1",
-      availableBalance: 4500,
-      currentBalance: 4500,
-      institutionId: "mock-bank-1",
-      name: "State Bank of India Savings",
-      officialName: "State Bank of India",
-      mask: "1234",
-      type: "checking",
-      subtype: "checking",
-      appwriteItemId: "mock-appwrite-1",
-      shareableId: "mock-sharable-1",
-    },
-    {
-      id: "mock-account-2",
-      availableBalance: 3200,
-      currentBalance: 3200,
-      institutionId: "mock-bank-2",
-      name: "HDFC Bank Current Account",
-      officialName: "HDFC Bank Ltd",
-      mask: "5678",
-      type: "checking",
-      subtype: "checking",
-      appwriteItemId: "mock-appwrite-2",
-      shareableId: "mock-sharable-2",
-    },
-    {
-      id: "mock-account-3",
-      availableBalance: 6800,
-      currentBalance: 6800,
-      institutionId: "mock-bank-3",
-      name: "ICICI Bank Savings Plus",
-      officialName: "ICICI Bank Ltd",
-      mask: "9012",
-      type: "savings",
-      subtype: "savings",
-      appwriteItemId: "mock-appwrite-3",
-      shareableId: "mock-sharable-3",
-    },
-    {
-      id: "mock-account-4",
-      availableBalance: 2900,
-      currentBalance: 2900,
-      institutionId: "mock-bank-4",
-      name: "Axis Bank Salary Account",
-      officialName: "Axis Bank Ltd",
-      mask: "3456",
-      type: "checking",
-      subtype: "checking",
-      appwriteItemId: "mock-appwrite-4",
-      shareableId: "mock-sharable-4",
-    },
-    {
-      id: "mock-account-5",
-      availableBalance: 5100,
-      currentBalance: 5100,
-      institutionId: "mock-bank-5",
-      name: "Punjab National Bank",
-      officialName: "Punjab National Bank",
-      mask: "7890",
-      type: "checking",
-      subtype: "checking",
-      appwriteItemId: "mock-appwrite-5",
-      shareableId: "mock-sharable-5",
-    },
-  ];
+  // Use real data from context
+  const accountsData = bankAccounts
 
-  const accountsData = mockAccounts;
   const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
 
-  // Mock transactions for all banks
-  const allTransactions = [
-    // SBI Transactions
-    {
-      $id: "mock-transaction-1",
-      id: "mock-transaction-1",
-      name: "Grocery Store",
-      paymentChannel: "online",
-      channel: "online",
-      type: "debit",
-      accountId: "mock-account-1",
-      amount: -2500,
-      pending: false,
-      category: "Food and Drink",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "mock-account-1",
-      receiverBankId: "external-bank",
-    },
-    {
-      $id: "mock-transaction-2",
-      id: "mock-transaction-2",
-      name: "Salary Deposit",
-      paymentChannel: "online",
-      channel: "online",
-      type: "credit",
-      accountId: "mock-account-1",
-      amount: 50000,
-      pending: false,
-      category: "Income",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "external-bank",
-      receiverBankId: "mock-account-1",
-    },
-    // HDFC Transactions
-    {
-      $id: "mock-transaction-3",
-      id: "mock-transaction-3",
-      name: "UPI Payment to Merchant",
-      paymentChannel: "online",
-      channel: "online",
-      type: "debit",
-      accountId: "mock-account-2",
-      amount: -1500,
-      pending: false,
-      category: "Transfer",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "mock-account-2",
-      receiverBankId: "external-bank",
-    },
-    {
-      $id: "mock-transaction-4",
-      id: "mock-transaction-4",
-      name: "ATM Withdrawal",
-      paymentChannel: "atm",
-      channel: "atm",
-      type: "debit",
-      accountId: "mock-account-2",
-      amount: -2000,
-      pending: false,
-      category: "Cash",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "mock-account-2",
-      receiverBankId: "external-bank",
-    },
-    // ICICI Transactions
-    {
-      $id: "mock-transaction-5",
-      id: "mock-transaction-5",
-      name: "Online Shopping",
-      paymentChannel: "online",
-      channel: "online",
-      type: "debit",
-      accountId: "mock-account-3",
-      amount: -3500,
-      pending: false,
-      category: "Shopping",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "mock-account-3",
-      receiverBankId: "external-bank",
-    },
-    {
-      $id: "mock-transaction-6",
-      id: "mock-transaction-6",
-      name: "Freelance Payment",
-      paymentChannel: "online",
-      channel: "online",
-      type: "credit",
-      accountId: "mock-account-3",
-      amount: 8000,
-      pending: false,
-      category: "Income",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "external-bank",
-      receiverBankId: "mock-account-3",
-    },
-    // Axis Bank Transactions
-    {
-      $id: "mock-transaction-7",
-      id: "mock-transaction-7",
-      name: "Electricity Bill Payment",
-      paymentChannel: "online",
-      channel: "online",
-      type: "debit",
-      accountId: "mock-account-4",
-      amount: -1200,
-      pending: false,
-      category: "Utilities",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "mock-account-4",
-      receiverBankId: "external-bank",
-    },
-    {
-      $id: "mock-transaction-8",
-      id: "mock-transaction-8",
-      name: "Monthly Salary",
-      paymentChannel: "online",
-      channel: "online",
-      type: "credit",
-      accountId: "mock-account-4",
-      amount: 45000,
-      pending: false,
-      category: "Income",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "external-bank",
-      receiverBankId: "mock-account-4",
-    },
-    // Punjab National Bank Transactions
-    {
-      $id: "mock-transaction-9",
-      id: "mock-transaction-9",
-      name: "Mobile Recharge",
-      paymentChannel: "online",
-      channel: "online",
-      type: "debit",
-      accountId: "mock-account-5",
-      amount: -500,
-      pending: false,
-      category: "Utilities",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "mock-account-5",
-      receiverBankId: "external-bank",
-    },
-    {
-      $id: "mock-transaction-10",
-      id: "mock-transaction-10",
-      name: "Investment Returns",
-      paymentChannel: "online",
-      channel: "online",
-      type: "credit",
-      accountId: "mock-account-5",
-      amount: 2500,
-      pending: false,
-      category: "Investment",
-      date: new Date().toISOString(),
-      $createdAt: new Date().toISOString(),
-      image: "",
-      senderBankId: "external-bank",
-      receiverBankId: "mock-account-5",
-    },
-  ];
+  // Use real transactions from context
+  const allTransactions = transactions
 
   // Filter transactions based on selected bank
   const filteredTransactions = selectedBank === 'all'
     ? allTransactions
-    : allTransactions.filter(t => t.accountId === selectedBank);
+    : allTransactions.filter(t => t.accountId === selectedBank || t.cardId === selectedBank);
 
-  // Calculate spending per bank
+  // Calculate spending per bank and card
   const bankSpending = accountsData.map(account => {
     const accountTransactions = allTransactions.filter(t => t.accountId === account.id);
     const totalSpent = accountTransactions
@@ -296,6 +38,17 @@ const TransactionHistory = ({ searchParams: { id, page }}:SearchParamProps) => {
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
     return {
       ...account,
+      totalSpent,
+    };
+  });
+
+  const cardSpending = creditCards.map(card => {
+    const cardTransactions = allTransactions.filter(t => t.cardId === card.id);
+    const totalSpent = cardTransactions
+      .filter(t => t.amount < 0)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    return {
+      ...card,
       totalSpent,
     };
   });
@@ -312,28 +65,71 @@ const TransactionHistory = ({ searchParams: { id, page }}:SearchParamProps) => {
   return (
     <div className="transactions">
       <div className="transactions-header">
-        <HeaderBox 
+        <HeaderBox
           title="Transaction History"
           subtext="See your bank details and transactions."
         />
       </div>
 
       <div className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-blue-600">{accountsData.length}</h3>
+                <p className="text-sm text-gray-600">Total Bank Accounts</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-green-600">{creditCards.length}</h3>
+                <p className="text-sm text-gray-600">Total Credit Cards</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-purple-600">{allTransactions.length}</h3>
+                <p className="text-sm text-gray-600">Total Transactions</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-red-600">
+                  ₹{allTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0).toLocaleString()}
+                </h3>
+                <p className="text-sm text-gray-600">Total Spent</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Bank Filter */}
         <Card>
           <CardHeader>
-            <CardTitle>Filter by Bank</CardTitle>
+            <CardTitle>Filter by Account/Card</CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedBank} onValueChange={setSelectedBank}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a bank" />
+                <SelectValue placeholder="Select an account or card" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Banks</SelectItem>
+                <SelectItem value="all">All Accounts & Cards</SelectItem>
                 {accountsData.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
-                    {account.officialName} - ₹{account.totalSpent} spent
+                    {account.officialName} - ₹{bankSpending.find(b => b.id === account.id)?.totalSpent || 0} spent
+                  </SelectItem>
+                ))}
+                {creditCards.map((card) => (
+                  <SelectItem key={card.id} value={card.id}>
+                    {card.name} (Card) - ₹{cardSpending.find(c => c.id === card.id)?.totalSpent || 0} spent
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -341,18 +137,33 @@ const TransactionHistory = ({ searchParams: { id, page }}:SearchParamProps) => {
           </CardContent>
         </Card>
 
-        {/* Bank Spending Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Bank and Card Spending Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {bankSpending.map((bank) => (
             <Card key={bank.id}>
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="font-semibold">{bank.officialName}</h3>
-                    <p className="text-sm text-gray-600">Current Balance: ₹{bank.currentBalance}</p>
+                    <p className="text-sm text-gray-600">Balance: ₹{bank.currentBalance}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-red-600">Spent: ₹{bank.totalSpent}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {cardSpending.map((card) => (
+            <Card key={card.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">{card.name}</h3>
+                    <p className="text-sm text-gray-600">Limit: ₹{card.limit}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-red-600">Spent: ₹{card.totalSpent}</p>
                   </div>
                 </div>
               </CardContent>
