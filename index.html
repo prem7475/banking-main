@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Banking Main App</title>
+  <!-- Example: link to your global styles (Tailwind) -->
+  <link href="/styles/globals.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="py-6 bg-white shadow-sm">
+    <div class="container mx-auto px-4">
+      <h1 class="text-2xl font-semibold">Fintech Bank App</h1>
+      <nav class="mt-2">
+        <ul class="flex space-x-4">
+          <li><a href="/" class="hover:underline">Home</a></li>
+          <li><a href="/banks" class="hover:underline">My Banks</a></li>
+          <li><a href="/transactions" class="hover:underline">Transactions</a></li>
+          <li><a href="/transfer" class="hover:underline">Transfer Funds</a></li>
+          <li><a href="/profile" class="hover:underline">Profile</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-10">
+    <!-- Placeholder for main content -->
+    <section id="overview">
+      <h2 class="text-xl font-bold mb-4">Welcome to your dashboard</h2>
+      <p class="mb-6">View your connected bank accounts, recent transactions, and manage transfers.</p>
+      <!-- Example stats card -->
+      <div class="grid gap-6 md:grid-cols-3">
+        <div class="p-6 bg-white rounded-lg shadow">
+          <h3 class="text-lg font-medium">Total Balance</h3>
+          <p class="mt-2 text-2xl">$12,345.67</p>
+        </div>
+        <div class="p-6 bg-white rounded-lg shadow">
+          <h3 class="text-lg font-medium">Accounts Connected</h3>
+          <p class="mt-2 text-2xl">4</p>
+        </div>
+        <div class="p-6 bg-white rounded-lg shadow">
+          <h3 class="text-lg font-medium">Recent Transactions</h3>
+          <p class="mt-2 text-2xl">15</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="py-6 bg-white mt-12 shadow-inner">
+    <div class="container mx-auto px-4 text-center text-sm text-gray-500">
+      &copy; 2025 Fintech Bank App. All rights reserved.
+    </div>
+  </footer>
+
+  <!-- Example: script for your bundle (Next.js built) -->
+  <script src="/_next/static/chunks/main.js"></script>
+</body>
+</html>
