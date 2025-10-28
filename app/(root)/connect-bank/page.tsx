@@ -85,7 +85,7 @@ const ConnectBank = () => {
         fundingSourceUrl: 'https://mock-funding-url.com',
         shareableId: `shareable-${Date.now()}`,
         cardType: 'rupay',
-        upiPin: user.upiPin, // Use user's UPI PIN
+        upiPin: upiPin, // Use entered UPI PIN
       });
 
       if (newBank) {
@@ -232,10 +232,10 @@ const ConnectBank = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Bank Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="bank-select">Select Your Bank</Label>
+                <div className="form-group">
+                  <Label htmlFor="bank-select" className="form-label">Select Your Bank</Label>
                   <Select value={selectedBank} onValueChange={setSelectedBank}>
-                    <SelectTrigger>
+                    <SelectTrigger className="form-input">
                       <SelectValue placeholder="Choose your bank" />
                     </SelectTrigger>
                     <SelectContent>
@@ -252,8 +252,8 @@ const ConnectBank = () => {
                 </div>
 
                 {/* Account Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="account-number">Account Number</Label>
+                <div className="form-group">
+                  <Label htmlFor="account-number" className="form-label">Account Number</Label>
                   <Input
                     id="account-number"
                     type="text"
@@ -261,12 +261,13 @@ const ConnectBank = () => {
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
                     maxLength={18}
+                    className="form-input"
                   />
                 </div>
 
                 {/* IFSC Code */}
-                <div className="space-y-2">
-                  <Label htmlFor="ifsc-code">IFSC Code</Label>
+                <div className="form-group">
+                  <Label htmlFor="ifsc-code" className="form-label">IFSC Code</Label>
                   <Input
                     id="ifsc-code"
                     type="text"
@@ -274,36 +275,39 @@ const ConnectBank = () => {
                     value={ifscCode}
                     onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
                     maxLength={11}
+                    className="form-input"
                   />
                 </div>
 
                 {/* Customer ID */}
-                <div className="space-y-2">
-                  <Label htmlFor="customer-id">Customer ID / User ID</Label>
+                <div className="form-group">
+                  <Label htmlFor="customer-id" className="form-label">Customer ID / User ID</Label>
                   <Input
                     id="customer-id"
                     type="text"
                     placeholder="Enter your customer ID"
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
+                    className="form-input"
                   />
                 </div>
 
                 {/* Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password / PIN</Label>
+                <div className="form-group">
+                  <Label htmlFor="password" className="form-label">Password / PIN</Label>
                   <Input
                     id="password"
                     type="password"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="form-input"
                   />
                 </div>
 
                 {/* UPI PIN */}
-                <div className="space-y-2">
-                  <Label htmlFor="upi-pin">UPI PIN</Label>
+                <div className="form-group">
+                  <Label htmlFor="upi-pin" className="form-label">UPI PIN</Label>
                   <Input
                     id="upi-pin"
                     type="password"
@@ -311,6 +315,7 @@ const ConnectBank = () => {
                     value={upiPin}
                     onChange={(e) => setUpiPin(e.target.value)}
                     maxLength={4}
+                    className="form-input"
                   />
                 </div>
 
@@ -336,7 +341,7 @@ const ConnectBank = () => {
                   <Button
                     onClick={handleConnect}
                     disabled={isConnecting}
-                    className="flex-1"
+                    className="btn-primary flex-1 animate-pulse-on-hover"
                   >
                     {isConnecting ? (
                       <>

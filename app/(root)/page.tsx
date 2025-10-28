@@ -33,7 +33,7 @@ const Home = ({ searchParams: { id, page } }: SearchParamProps) => {
   const [creditUpiPin, setCreditUpiPin] = useState('');
   const [creditPinError, setCreditPinError] = useState('');
 
-  const { bankAccounts, creditCards } = useAppContext()
+  const { bankAccounts, creditCards, transactions, loading } = useAppContext()
 
   // Get logged in user from MongoDB
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
@@ -74,33 +74,11 @@ const Home = ({ searchParams: { id, page } }: SearchParamProps) => {
   const accountsData = bankAccounts;
   const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
 
-  // Get real transactions from MongoDB
-  const [transactions, setTransactions] = useState<any[]>([]);
-
-  useEffect(() => {
-    const getTransactions = async () => {
-      try {
-        const { getTransactions } = await import('@/lib/actions/transaction.actions');
-        if (loggedInUser?.userId) {
-          const userTransactions = await getTransactions({ userId: loggedInUser.userId });
-          setTransactions(userTransactions || []);
-        }
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-      }
-    };
-    if (loggedInUser) {
-      getTransactions();
-    }
-  }, [loggedInUser]);
-
-  // Mock account details - will be replaced with real data when banks are connected
-  const mockAccount = {
+  // Use transactions from context instead of local state
+  const account = {
     data: accountsData[0] || null,
-    transactions: transactions.length > 0 ? transactions : [],
+    transactions: transactions,
   };
-
-  const account = mockAccount;
 
   const cardsPerPage = 16;
   const totalCardPages = Math.ceil(creditCards.length / cardsPerPage);

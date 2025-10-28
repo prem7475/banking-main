@@ -42,7 +42,7 @@ const TransactionsTable = ({ transactions, onTransactionClick }: TransactionTabl
         </TableRow>
       </TableHeader>
       <TableBody>
-        {transactions.map((t: Transaction) => {
+        {transactions.map((t: Transaction, index: number) => {
           const status = getTransactionStatus(new Date(t.date))
           const amount = formatAmount(t.amount)
 
@@ -52,7 +52,8 @@ const TransactionsTable = ({ transactions, onTransactionClick }: TransactionTabl
           return (
             <TableRow
               key={t.id}
-              className={`${isDebit || amount[0] === '-' ? 'bg-[#FFFBFA]' : 'bg-[#F6FEF9]'} !over:bg-none !border-b-DEFAULT cursor-pointer hover:bg-gray-50`}
+              className={`${isDebit || amount[0] === '-' ? 'bg-[#FFFBFA]' : 'bg-[#F6FEF9]'} !over:bg-none !border-b-DEFAULT cursor-pointer hover:bg-gray-50 animate-fade-in`}
+              style={{ animationDelay: `${index * 0.1}s` }}
               onClick={() => onTransactionClick?.(t)}
             >
               <TableCell className="max-w-[250px] pl-2 pr-10">

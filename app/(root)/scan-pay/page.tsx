@@ -1,17 +1,19 @@
 'use client'
 
 import HeaderBox from '@/components/HeaderBox'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, CheckCircle, Loader2, QrCode, Camera, Upload, CreditCard } from 'lucide-react'
+import { AlertCircle, CheckCircle, Loader2, QrCode, Camera, Upload, CreditCard, Building2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { QRParser, UPIQRData } from '@/components/QRParser'
+import { useAppContext } from '@/lib/context/AppContext'
 
 const ScanPay = () => {
+  const { creditCards, bankAccounts } = useAppContext()
   const [scanMode, setScanMode] = useState<'camera' | 'upload'>('camera')
   const [isScanning, setIsScanning] = useState(false)
   const [scanResult, setScanResult] = useState<UPIQRData | null>(null)
@@ -20,19 +22,30 @@ const ScanPay = () => {
   const [selectedCard, setSelectedCard] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [upiEligibleMethods, setUpiEligibleMethods] = useState<any[]>([])
+  const [loadingMethods, setLoadingMethods] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Mock bank accounts and credit cards
-  const mockAccounts = [
-    { id: 'acc-1', name: 'SBI Savings', balance: 4500, type: 'bank' },
-    { id: 'acc-2', name: 'HDFC Current', balance: 3200, type: 'bank' },
-    { id: 'acc-3', name: 'ICICI Savings', balance: 6800, type: 'bank' },
-  ]
+  // Fetch UPI eligible payment methods on component mount
+  useEffect(() => {
+    const fetchUpiMethods = async () => {
+      try {
+        const response = await fetch('/api/payment-methods/upi-eligible')
+        if (response.ok) {
+          const data = await response.json()
+          setUpiEligibleMethods(data.methods || [])
+        } else {
+          console.error('Failed to fetch UPI eligible methods:', response.statusText)
+        }
+      } catch (error) {
+        console.error('Error fetching UPI eligible methods:', error)
+      } finally {
+        setLoadingMethods(false)
+      }
+    }
 
-  const mockCards = [
-    { id: 'card-1', name: 'HDFC Credit Card', balance: 25000, type: 'credit' },
-    { id: 'card-2', name: 'ICICI Credit Card', balance: 18000, type: 'credit' },
-  ]
+    fetchUpiMethods()
+  }, [])
 
   const handleScan = async () => {
     setIsScanning(true)
@@ -238,22 +251,44 @@ const ScanPay = () => {
                   <>
                     {/* Account Selection */}
                     <div className="space-y-2">
-                      <Label htmlFor="payment-method">Payment Method</Label>
-                      <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-                        <SelectTrigger id="payment-method" aria-label="Select bank account" title="Select bank account">
-                          <SelectValue placeholder="Select bank account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {mockAccounts.map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              <div className="flex justify-between items-center w-full">
-                                <span>{account.name}</span>
-                                <span className="text-sm text-gray-500">₹{account.balance.toLocaleString()}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="payment-method">Pay From</Label>
+                      {loadingMethods ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Loading payment methods...
+                        </div>
+                      ) : (
+                        <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                          <SelectTrigger id="payment-method" aria-label="Select payment method" title="Select payment method">
+                            <SelectValue placeholder="Select payment method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {upiEligibleMethods.length === 0 ? (
+                              <SelectItem value="" disabled>
+                                No UPI eligible methods available
+                              </SelectItem>
+                            ) : (
+                              upiEligibleMethods.map((method) => (
+                                <SelectItem key={method._id} value={method._id}>
+                                  <div className="flex items-center gap-2">
+                                    {method.type === 'Bank' ? (
+                                      <Building2 className="w-4 h-4" />
+                                    ) : (
+                                      <CreditCard className="w-4 h-4" />
+                                    )}
+                                    <span>
+                                      {method.type === 'Bank'
+                                        ? `${method.bankId || 'Bank Account'} ....${method.accountId?.slice(-4) || '****'}`
+                                        : `${method.cardHolderName} - ${method.cardNetwork?.toUpperCase()} ....${method.cardNumber?.slice(-4) || '****'}`
+                                      }
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
 
                     {/* Credit Card Selection */}
@@ -267,14 +302,21 @@ const ScanPay = () => {
                           <SelectValue placeholder="Select credit card (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockCards.map((card) => (
-                            <SelectItem key={card.id} value={card.id}>
-                              <div className="flex justify-between items-center w-full">
-                                <span>{card.name}</span>
-                                <span className="text-sm text-gray-500">₹{card.balance.toLocaleString()}</span>
-                              </div>
+                          {creditCards.length === 0 ? (
+                            <SelectItem value="" disabled>
+                              No credit cards available
                             </SelectItem>
-                          ))}
+                          ) : (
+                            creditCards.map((card) => (
+                              <SelectItem key={card.id} value={card.id}>
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="w-4 h-4" />
+                                  <span>{card.name}</span>
+                                  <span className="text-sm text-gray-500">₹{card.balance.toLocaleString()}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -306,8 +348,10 @@ const ScanPay = () => {
                       <div className="flex justify-between text-sm">
                         <span>Payment Method:</span>
                         <span className="font-medium">
-                          {selectedAccount ? mockAccounts.find(acc => acc.id === selectedAccount)?.name :
-                           selectedCard ? mockCards.find(card => card.id === selectedCard)?.name :
+                          {selectedAccount ? upiEligibleMethods.find(method => method._id === selectedAccount)?.type === 'Bank'
+                            ? `${upiEligibleMethods.find(method => method._id === selectedAccount)?.bankId || 'Bank Account'} ....${upiEligibleMethods.find(method => method._id === selectedAccount)?.accountId?.slice(-4) || '****'}`
+                            : `${upiEligibleMethods.find(method => method._id === selectedAccount)?.cardHolderName} - ${upiEligibleMethods.find(method => method._id === selectedAccount)?.cardNetwork?.toUpperCase()} ....${upiEligibleMethods.find(method => method._id === selectedAccount)?.cardNumber?.slice(-4) || '****'}`
+                           : selectedCard ? creditCards.find(card => card.id === selectedCard)?.name :
                            'Not selected'}
                         </span>
                       </div>

@@ -30,9 +30,13 @@ const bankSchema = new mongoose.Schema({
     enum: ['rupay', 'visa', 'mastercard', 'amex'],
     default: 'rupay',
   },
-  upiPin: {
+  hashedUpiPin: {
     type: String,
     required: true,
+  },
+  hashedTpin: {
+    type: String,
+    required: false,
   },
 }, {
   timestamps: true,

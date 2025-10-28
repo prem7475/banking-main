@@ -109,6 +109,9 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Hash UPI PIN
+    const hashedUpiPin = await bcrypt.hash(upiPin, 12);
+
     // Create Dwolla customer (you'll need to implement this)
     const dwollaCustomerUrl = `https://api-sandbox.dwolla.com/customers/${Date.now()}`;
     const dwollaCustomerId = `customer-${Date.now()}`;
@@ -121,7 +124,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
       name: `${firstName} ${lastName}`,
       email,
       password: hashedPassword,
-      upiPin,
+      upiPin: hashedUpiPin,
       dwollaCustomerUrl,
       dwollaCustomerId,
       address1: userData.address1,
@@ -232,7 +235,7 @@ export const getUserUpiPin = async (userId: string) => {
     const user = await User.findOne({ userId });
 
     if (user) {
-      return user.upiPin;
+      return user.upiPin; // This is now hashed
     }
 
     return null;
@@ -268,9 +271,15 @@ export const createBankAccount = async ({
   shareableId,
   cardType = 'rupay',
   upiPin,
-}: createBankAccountProps & { cardType?: string; upiPin: string }) => {
+  tpin,
+}: createBankAccountProps & { cardType?: string; upiPin: string; tpin?: string }) => {
   try {
     await connectToDatabase();
+
+    // Hash the PINs
+    const saltRounds = 10;
+    const hashedUpiPin = await bcrypt.hash(upiPin, saltRounds);
+    const hashedTpin = tpin ? await bcrypt.hash(tpin, saltRounds) : undefined;
 
     const newBank = new Bank({
       userId,
@@ -280,7 +289,8 @@ export const createBankAccount = async ({
       fundingSourceUrl,
       shareableId,
       cardType,
-      upiPin,
+      hashedUpiPin,
+      hashedTpin,
     });
 
     await newBank.save();
@@ -305,6 +315,7 @@ export const exchangePublicToken = async ({
       accessToken: 'mock-access-token',
       fundingSourceUrl: 'https://mock-funding-url.com',
       shareableId: 'mock-shareable-id-' + Date.now(),
+      upiPin: '1234', // Default mock PIN
     });
 
     // Revalidate the path to reflect the changes

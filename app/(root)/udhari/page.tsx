@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import HeaderBox from '@/components/HeaderBox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { formatAmount } from '@/lib/utils'
 import { Plus, Minus, TrendingUp, TrendingDown, PieChart, CreditCard, Building2 } from 'lucide-react'
 
 const Udhari = () => {
-  const { bankAccounts, creditCards } = useAppContext()
+  const { bankAccounts, creditCards, loading } = useAppContext()
   const [showAddTransaction, setShowAddTransaction] = useState(false)
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense')
   const [amount, setAmount] = useState('')
@@ -22,8 +22,12 @@ const Udhari = () => {
   const [category, setCategory] = useState('')
   const [accountType, setAccountType] = useState<'bank' | 'card'>('bank')
   const [selectedAccount, setSelectedAccount] = useState('')
+  const { transactions: contextTransactions } = useAppContext()
 
-  // Mock data for expenses and income
+  // Use context transactions or fallback to mock data
+  const transactions = contextTransactions || []
+
+  // Mock data for expenses and income (fallback)
   const [mockTransactions, setMockTransactions] = useState([
     {
       id: '1',
@@ -130,23 +134,40 @@ const Udhari = () => {
     'Other'
   ]
 
-  const handleAddTransaction = () => {
+  const handleAddTransaction = async () => {
     if (!amount || !description || !category || !selectedAccount) return
 
-    const newTransaction = {
-      id: Date.now().toString(),
-      name: description,
-      amount: transactionType === 'expense' ? -parseFloat(amount) : parseFloat(amount),
-      category,
-      date: new Date(),
-      type: transactionType,
-      account: selectedAccount,
-      accountType
-    }
+    try {
+      const { createTransaction } = await import('@/lib/actions/transaction.actions')
+      const { getLoggedInUser } = await import('@/lib/actions/user.actions')
 
-    setMockTransactions([newTransaction, ...mockTransactions])
-    resetForm()
-    setShowAddTransaction(false)
+      const user = await getLoggedInUser()
+      if (!user) return
+
+      const newTransaction = await createTransaction({
+        userId: user.userId,
+        bankId: 'mock-bank-id', // For now, use mock
+        name: description,
+        amount: transactionType === 'expense' ? -parseFloat(amount) : parseFloat(amount),
+        channel: 'online',
+        category,
+        senderBankId: 'mock-sender',
+        receiverBankId: 'mock-receiver',
+        type: transactionType === 'expense' ? 'debit' : 'credit',
+        paymentChannel: 'online',
+        pending: false,
+        date: new Date(),
+        image: '',
+      })
+
+      if (newTransaction) {
+        // Note: In a real app, you'd update the context or refetch data
+        resetForm()
+        setShowAddTransaction(false)
+      }
+    } catch (error) {
+      console.error('Error adding transaction:', error)
+    }
   }
 
   const resetForm = () => {
@@ -158,20 +179,20 @@ const Udhari = () => {
     setAccountType('bank')
   }
 
-  // Calculate totals
-  const totalIncome = mockTransactions
-    .filter(t => t.type === 'income')
+  // Calculate totals from real transactions
+  const totalIncome = transactions
+    .filter(t => t.type === 'credit')
     .reduce((sum, t) => sum + t.amount, 0)
 
-  const totalExpenses = Math.abs(mockTransactions
-    .filter(t => t.type === 'expense')
+  const totalExpenses = Math.abs(transactions
+    .filter(t => t.type === 'debit')
     .reduce((sum, t) => sum + t.amount, 0))
 
   const netBalance = totalIncome - totalExpenses
 
-  // Calculate category spending
-  const categorySpending = mockTransactions
-    .filter(t => t.type === 'expense')
+  // Calculate category spending from real transactions
+  const categorySpending = transactions
+    .filter(t => t.type === 'debit')
     .reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount)
       return acc
@@ -180,7 +201,7 @@ const Udhari = () => {
   const categoryData = Object.entries(categorySpending).map(([category, amount]) => ({
     category,
     amount,
-    percentage: (amount / totalExpenses) * 100
+    percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
   })).sort((a, b) => b.amount - a.amount)
 
   // Colors for chart
@@ -188,6 +209,22 @@ const Udhari = () => {
     'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
     'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-orange-500'
   ]
+
+  if (loading) {
+    return (
+      <div className="udhri">
+        <div className="udhri-header">
+          <HeaderBox
+            title="Udhri - Monthly Expenses & Income"
+            subtext="Track your monthly spending, income, and financial insights."
+          />
+        </div>
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div>Loading...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="udhri">
@@ -432,39 +469,35 @@ const Udhari = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockTransactions.slice(0, 10).map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
-                      {transaction.type === 'income' ? (
-                        <Plus className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Minus className="w-4 h-4 text-red-600" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{transaction.name}</p>
-                      <p className="text-sm text-gray-500">{transaction.category}</p>
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
-                        {transaction.accountType === 'bank' ? (
-                          <Building2 className="w-3 h-3" />
+              {transactions.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No transactions found. Add your first transaction!</p>
+              ) : (
+                transactions.slice(0, 10).map((transaction) => (
+                  <div key={transaction._id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${transaction.type === 'credit' ? 'bg-green-100' : 'bg-red-100'}`}>
+                        {transaction.type === 'credit' ? (
+                          <Plus className="w-4 h-4 text-green-600" />
                         ) : (
-                          <CreditCard className="w-3 h-3" />
+                          <Minus className="w-4 h-4 text-red-600" />
                         )}
-                        {transaction.account}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{transaction.name}</p>
+                        <p className="text-sm text-gray-500">{transaction.category}</p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                        {transaction.type === 'credit' ? '+' : '-'}₹{formatAmount(Math.abs(transaction.amount))}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className={`font-semibold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {transaction.amount > 0 ? '+' : ''}₹{formatAmount(Math.abs(transaction.amount))}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {transaction.date.toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
