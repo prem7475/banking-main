@@ -15,13 +15,6 @@ const Sidebar = ({ user }: SiderbarProps) => {
     <section className="sidebar h-screen">
       <nav className="flex flex-col gap-4">
         <Link href="/" className="mb-12 cursor-pointer flex items-center gap-2">
-          <Image
-            src="/icons/logo.svg"
-            width={34}
-            height={34}
-            alt="UdharPay logo"
-            className="size-[24px] max-xl:size-14"
-          />
           <h1 className="sidebar-logo">UdharPay</h1>
         </Link>
 
