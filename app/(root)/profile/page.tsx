@@ -1,96 +1,140 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Camera, CheckCircle, User, Mail, MapPin, CreditCard, Lock } from 'lucide-react';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
+import { AlertCircle, CheckCircle, User, Mail, Lock, KeyRound } from 'lucide-react';
+import { useAppContext } from '@/lib/context/AppContext';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Profile = () => {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { userProfile, setUserProfile } = useAppContext();
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showUpiPin, setShowUpiPin] = useState(false);
 
-  // Form state
+  // Password update state
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+
+  // UPI PIN update state
+  const [showUpiPinDialog, setShowUpiPinDialog] = useState(false);
+  const [upiPinForm, setUpiPinForm] = useState({
+    currentPin: '',
+    newPin: '',
+    confirmPin: ''
+  });
+  const [upiPinError, setUpiPinError] = useState('');
+
+  // Profile form state
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    address1: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    dateOfBirth: '',
-    panNumber: '',
-    upiPin: '',
-    tpin: '',
-    profilePhoto: '',
+    fullName: userProfile.fullName || '',
   });
 
-  // PIN visibility states
-  const [showUpiPin, setShowUpiPin] = useState(false);
-  const [showTpin, setShowTpin] = useState(false);
-
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const loggedInUser = await getLoggedInUser();
-        if (!loggedInUser) {
-          router.push('/sign-in');
-          return;
-        }
-        setUser(loggedInUser);
-        setFormData({
-          firstName: loggedInUser.firstName || '',
-          lastName: loggedInUser.lastName || '',
-          email: loggedInUser.email || '',
-          address1: loggedInUser.address1 || '',
-          city: loggedInUser.city || '',
-          state: loggedInUser.state || '',
-          postalCode: loggedInUser.postalCode || '',
-          dateOfBirth: loggedInUser.dateOfBirth || '',
-          panNumber: loggedInUser.panNumber || '',
-          upiPin: loggedInUser.upiPin || '',
-          tpin: loggedInUser.tpin || '',
-          profilePhoto: loggedInUser.profilePhoto || '',
-        });
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(false);
+  }, []);
 
-    fetchUser();
-  }, [router]);
+  const handleUpdatePassword = async () => {
+    setPasswordError('');
 
-  const calculateProfileCompletion = () => {
-    const fields = [
-      formData.firstName,
-      formData.lastName,
-      formData.email,
-      formData.address1,
-      formData.city,
-      formData.state,
-      formData.postalCode,
-      formData.dateOfBirth,
-      formData.panNumber,
-      formData.upiPin,
-      formData.tpin,
-      formData.profilePhoto,
-    ];
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
 
-    const filledFields = fields.filter(field => field && field.trim() !== '').length;
-    return Math.round((filledFields / fields.length) * 100);
+    if (passwordForm.currentPassword !== userProfile.password) {
+      setPasswordError('Current password is incorrect');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const updatedProfile = {
+        ...userProfile,
+        password: passwordForm.newPassword
+      };
+      setUserProfile(updatedProfile);
+      setMessage('Password updated successfully!');
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordDialog(false);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setPasswordError('Failed to update password');
+      console.error('Error updating password:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateUpiPin = async () => {
+    setUpiPinError('');
+
+    if (!upiPinForm.currentPin || !upiPinForm.newPin || !upiPinForm.confirmPin) {
+      setUpiPinError('All fields are required');
+      return;
+    }
+
+    if (upiPinForm.currentPin !== userProfile.upiPin) {
+      setUpiPinError('Current UPI PIN is incorrect');
+      return;
+    }
+
+    if (upiPinForm.newPin.length !== 4 || !/^\d+$/.test(upiPinForm.newPin)) {
+      setUpiPinError('UPI PIN must be exactly 4 digits');
+      return;
+    }
+
+    if (upiPinForm.newPin !== upiPinForm.confirmPin) {
+      setUpiPinError('New UPI PINs do not match');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const updatedProfile = {
+        ...userProfile,
+        upiPin: upiPinForm.newPin
+      };
+      setUserProfile(updatedProfile);
+      setMessage('UPI PIN updated successfully!');
+      setUpiPinForm({
+        currentPin: '',
+        newPin: '',
+        confirmPin: ''
+      });
+      setShowUpiPinDialog(false);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setUpiPinError('Failed to update UPI PIN');
+      console.error('Error updating UPI PIN:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -98,6 +142,281 @@ const Profile = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!formData.fullName.trim()) {
+      setMessage('Name is required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const updatedProfile = {
+        ...userProfile,
+        fullName: formData.fullName
+      };
+      setUserProfile(updatedProfile);
+      setMessage('Profile updated successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      setMessage('Failed to save profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !userProfile) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  return (
+    <div className="profile px-4 lg:px-6 py-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
+          <p className="text-gray-600">Manage your account and security settings</p>
+        </div>
+
+        {message && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">{message}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid grid-cols-1 gap-6">
+          {/* Profile Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Profile Information
+              </CardTitle>
+              <CardDescription>
+                Update your basic profile information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={loading}>
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Password Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="w-5 h-5" />
+                Password Settings
+              </CardTitle>
+              <CardDescription>
+                Update your account password
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+                <Button variant="outline" className="w-full" onClick={() => setShowPasswordDialog(true)}>
+                  Change Password
+                </Button>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                      Enter your current password and new password
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          value={passwordForm.currentPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                          placeholder="Enter current password"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          value={passwordForm.newPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                          placeholder="Enter new password"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="showPassword"
+                        type="checkbox"
+                        checked={showPassword}
+                        onChange={(e) => setShowPassword(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor="showPassword" className="cursor-pointer">Show password</Label>
+                    </div>
+                    {passwordError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{passwordError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="flex gap-3">
+                      <Button variant="outline" onClick={() => setShowPasswordDialog(false)} className="flex-1">
+                        Cancel
+                      </Button>
+                      <Button onClick={handleUpdatePassword} disabled={loading} className="flex-1">
+                        {loading ? 'Updating...' : 'Update'}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+
+          {/* UPI PIN Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5" />
+                UPI PIN Settings
+              </CardTitle>
+              <CardDescription>
+                Update your 4-digit UPI PIN for transactions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={showUpiPinDialog} onOpenChange={setShowUpiPinDialog}>
+                <Button variant="outline" className="w-full" onClick={() => setShowUpiPinDialog(true)}>
+                  Change UPI PIN
+                </Button>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Change UPI PIN</DialogTitle>
+                    <DialogDescription>
+                      Enter your current UPI PIN and new 4-digit UPI PIN
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPin">Current UPI PIN</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPin"
+                          type={showUpiPin ? 'text' : 'password'}
+                          value={upiPinForm.currentPin}
+                          onChange={(e) => setUpiPinForm({ ...upiPinForm, currentPin: e.target.value })}
+                          placeholder="Enter current UPI PIN"
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPin">New UPI PIN (4 digits)</Label>
+                      <div className="relative">
+                        <Input
+                          id="newPin"
+                          type={showUpiPin ? 'text' : 'password'}
+                          value={upiPinForm.newPin}
+                          onChange={(e) => setUpiPinForm({ ...upiPinForm, newPin: e.target.value.slice(0, 4) })}
+                          placeholder="Enter new UPI PIN"
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPin">Confirm UPI PIN</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPin"
+                          type={showUpiPin ? 'text' : 'password'}
+                          value={upiPinForm.confirmPin}
+                          onChange={(e) => setUpiPinForm({ ...upiPinForm, confirmPin: e.target.value.slice(0, 4) })}
+                          placeholder="Confirm new UPI PIN"
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="showPin"
+                        type="checkbox"
+                        checked={showUpiPin}
+                        onChange={(e) => setShowUpiPin(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor="showPin" className="cursor-pointer">Show PIN</Label>
+                    </div>
+                    {upiPinError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{upiPinError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="flex gap-3">
+                      <Button variant="outline" onClick={() => setShowUpiPinDialog(false)} className="flex-1">
+                        Cancel
+                      </Button>
+                      <Button onClick={handleUpdateUpiPin} disabled={loading} className="flex-1">
+                        {loading ? 'Updating...' : 'Update'}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+
+          {/* Security Information */}
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="text-blue-900">Security Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-blue-800 space-y-2">
+              <p>• Never share your password or UPI PIN with anyone</p>
+              <p>• Use a strong password with at least 6 characters</p>
+              <p>• Change your password regularly for better security</p>
+              <p>• Your UPI PIN is required for all transactions</p>
+              <p>• Always verify transaction details before confirming</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

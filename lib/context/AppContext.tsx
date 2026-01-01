@@ -1,69 +1,65 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 
-interface BankAccount {
+// --- Interfaces ---
+export interface BankAccount {
   id: string
-  availableBalance: number
-  currentBalance: number
-  institutionId: string
-  name: string
-  officialName: string
-  mask: string
-  type: string
-  subtype: string
-  appwriteItemId: string
-  shareableId: string
-}
-
-interface ConnectedBank {
-  id: string
-  name: string
-  accountNumber: string
+  accountName: string
+  accountNumber: string // Stores real number, mask in UI
   ifscCode: string
-  status: 'connected' | 'connecting' | 'error'
-}
-
-interface CreditCard {
-  id: string
-  name: string
+  bankName: string
   balance: number
-  limit: number
   type: string
-  color: string
-  status: string
-  number?: string
-  cvv?: string
+  status: 'active' | 'inactive'
 }
 
-interface Transaction {
-  $id: string
+export interface CreditCard {
   id: string
-  name: string
-  paymentChannel: string
-  channel: string
-  type: 'debit' | 'credit'
-  accountId: string
-  cardId?: string
+  cardName: string
+  cardNumber: string
+  cardNetwork: 'visa' | 'mastercard' | 'rupay'
+  balance: number // Amount used
+  limit: number
+  status: 'active' | 'inactive'
+  expiryDate: string
+  cvv: string
+}
+
+export interface Transaction {
+  id: string
   amount: number
-  pending: boolean
+  type: 'debit' | 'credit'
   category: string
+  description: string // e.g. "Paid to Shop"
   date: string
-  $createdAt: string
-  image: string
-  senderBankId: string
-  receiverBankId: string
+  paymentMethod: 'bank' | 'credit-card'
+  sourceId: string // Which bank/card ID paid for this
+  status: 'success' | 'failed'
+  isMerchantPayment?: boolean
+}
+
+export interface UserProfile {
+  upiPin: string
+  password: string
+  fullName: string
 }
 
 interface AppContextType {
   bankAccounts: BankAccount[]
-  setBankAccounts: React.Dispatch<React.SetStateAction<BankAccount[]>>
-  connectedBanks: ConnectedBank[]
-  setConnectedBanks: React.Dispatch<React.SetStateAction<ConnectedBank[]>>
+  addBankAccount: (account: BankAccount) => void
+  removeBankAccount: (id: string) => void
+  
   creditCards: CreditCard[]
-  setCreditCards: React.Dispatch<React.SetStateAction<CreditCard[]>>
+  addCreditCard: (card: CreditCard) => void
+  removeCreditCard: (id: string) => void
+  
   transactions: Transaction[]
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>
+  addTransaction: (transaction: Transaction) => void
+  
+  userProfile: UserProfile
+  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>
+  
   loading: boolean
 }
 
@@ -71,105 +67,67 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export const useAppContext = () => {
   const context = useContext(AppContext)
-  if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider')
-  }
+  if (!context) throw new Error('useAppContext must be used within AppProvider')
   return context
 }
 
-interface AppProviderProps {
-  children: ReactNode
-}
-
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+// --- Provider ---
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [loading, setLoading] = useState(true)
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
-  const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([])
   const [creditCards, setCreditCards] = useState<CreditCard[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    upiPin: '1234', password: 'admin', fullName: 'Prem Narayani'
+  })
 
-  // Fetch real data on app initialization
-  React.useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoading(true)
+  // 1. Load Data
+  useEffect(() => {
+    try {
+      const banks = localStorage.getItem('banking_banks')
+      const cards = localStorage.getItem('banking_cards')
+      const txs = localStorage.getItem('banking_txs')
+      const user = localStorage.getItem('banking_user')
 
-        // Fetch banks
-        const banksResponse = await fetch('/api/banks')
-        if (banksResponse.ok) {
-          const banksData = await banksResponse.json()
-          if (banksData.banks && banksData.banks.length > 0) {
-            const formattedBanks = banksData.banks.map((bank: any) => ({
-              id: bank.accountId,
-              availableBalance: 0, // Will be updated when real integration is added
-              currentBalance: 0, // Will be updated when real integration is added
-              institutionId: bank.bankId,
-              name: 'Connected Bank Account', // Will be updated with real bank name
-              officialName: 'Connected Bank Account', // Will be updated with real bank name
-              mask: bank.accountId.slice(-4),
-              type: 'checking',
-              subtype: 'checking',
-              appwriteItemId: bank._id,
-              shareableId: bank.shareableId,
-              cardType: bank.cardType,
-            }))
-            setBankAccounts(formattedBanks)
-          }
-        }
+      if (banks) setBankAccounts(JSON.parse(banks))
+      else setBankAccounts([{ id: 'b1', accountName: 'Main Account', accountNumber: '1234567890', ifscCode: 'HDFC001', bankName: 'HDFC Bank', balance: 50000, type: 'savings', status: 'active' }])
 
-        // Fetch credit cards
-        const cardsResponse = await fetch('/api/credit-cards')
-        if (cardsResponse.ok) {
-          const cardsData = await cardsResponse.json()
-          if (cardsData.cards && cardsData.cards.length > 0) {
-            const formattedCards = cardsData.cards.map((card: any) => ({
-              id: card._id,
-              name: card.name,
-              balance: card.balance || 0,
-              limit: card.limit || 0,
-              type: card.cardNetwork || 'visa',
-              color: card.cardNetwork === 'visa' ? 'from-blue-500 to-blue-700' :
-                     card.cardNetwork === 'mastercard' ? 'from-red-500 to-red-700' :
-                     'from-green-500 to-green-700',
-              status: card.status || 'active',
-              number: card.cardNumber ? `**** **** **** ${card.cardNumber.slice(-4)}` : undefined,
-              cvv: card.cvv ? '***' : undefined,
-            }))
-            setCreditCards(formattedCards)
-          }
-        }
-
-        // Fetch transactions
-        const transactionsResponse = await fetch('/api/transactions')
-        if (transactionsResponse.ok) {
-          const transactionsData = await transactionsResponse.json()
-          if (transactionsData.transactions) {
-            setTransactions(transactionsData.transactions)
-          }
-        }
-
-      } catch (error) {
-        console.error('Error fetching initial data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchInitialData()
+      if (cards) setCreditCards(JSON.parse(cards))
+      if (txs) setTransactions(JSON.parse(txs))
+      if (user) setUserProfile(JSON.parse(user))
+      
+    } catch (e) { console.error(e) } 
+    finally { setLoading(false) }
   }, [])
 
+  // 2. Save Data (Auto-save on change)
+  useEffect(() => { if (!loading) localStorage.setItem('banking_banks', JSON.stringify(bankAccounts)) }, [bankAccounts, loading])
+  useEffect(() => { if (!loading) localStorage.setItem('banking_cards', JSON.stringify(creditCards)) }, [creditCards, loading])
+  useEffect(() => { if (!loading) localStorage.setItem('banking_txs', JSON.stringify(transactions)) }, [transactions, loading])
+  useEffect(() => { if (!loading) localStorage.setItem('banking_user', JSON.stringify(userProfile)) }, [userProfile, loading])
+
+  // --- Actions ---
+  const addBankAccount = (acc: BankAccount) => setBankAccounts(prev => [...prev, acc])
+  const removeBankAccount = (id: string) => setBankAccounts(prev => prev.filter(b => b.id !== id))
+
+  const addCreditCard = (card: CreditCard) => setCreditCards(prev => [...prev, card])
+  const removeCreditCard = (id: string) => setCreditCards(prev => prev.filter(c => c.id !== id))
+
+  // Smart Transaction Add: Updates Balances automatically
+  const addTransaction = (tx: Transaction) => {
+    setTransactions(prev => [tx, ...prev])
+
+    if (tx.type === 'debit') {
+      if (tx.paymentMethod === 'bank') {
+        setBankAccounts(prev => prev.map(b => b.id === tx.sourceId ? { ...b, balance: b.balance - tx.amount } : b))
+      } else if (tx.paymentMethod === 'credit-card') {
+        setCreditCards(prev => prev.map(c => c.id === tx.sourceId ? { ...c, balance: c.balance + tx.amount } : c)) // Credit card usage increases balance owed
+      }
+    }
+  }
+
   return (
-    <AppContext.Provider value={{
-      bankAccounts,
-      setBankAccounts,
-      connectedBanks,
-      setConnectedBanks,
-      creditCards,
-      setCreditCards,
-      transactions,
-      setTransactions,
-      loading
-    }}>
+    <AppContext.Provider value={{ bankAccounts, addBankAccount, removeBankAccount, creditCards, addCreditCard, removeCreditCard, transactions, addTransaction, userProfile, setUserProfile, loading }}>
       {children}
     </AppContext.Provider>
   )

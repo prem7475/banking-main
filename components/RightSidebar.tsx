@@ -7,6 +7,7 @@ import Category from './Category'
 
 const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
   const categories: CategoryCount[] = countTransactionCategories(transactions);
+  const nameInitial = user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U';
 
   return (
     <aside className="right-sidebar h-screen">
@@ -14,15 +15,15 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
         <div className="profile-banner" />
         <div className="profile">
           <div className="profile-img">
-            <span className="text-5xl font-bold text-blue-500">{user.firstName[0]}</span>
+            <span className="text-5xl font-bold text-blue-500">{nameInitial}</span>
           </div>
 
           <div className="profile-details">
             <h1 className='profile-name'>
-              {user.firstName} {user.lastName}
+              {user?.fullName || 'User'}
             </h1>
             <p className="profile-email">
-              {user.email}
+              {user?.email || 'user@banking.app'}
             </p>
           </div>
         </div>
@@ -50,7 +51,7 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
               <BankCard 
                 key={banks[0].$id}
                 account={banks[0]}
-                userName={`${user.firstName} ${user.lastName}`}
+                userName={user?.fullName || 'User'}
                 showBalance={false}
               />
             </div>
@@ -59,7 +60,7 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
                 <BankCard 
                   key={banks[1].$id}
                   account={banks[1]}
-                  userName={`${user.firstName} ${user.lastName}`}
+                  userName={user?.fullName || 'User'}
                   showBalance={false}
                 />
               </div>

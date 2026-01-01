@@ -1,10 +1,7 @@
-export const dynamic = 'force-dynamic'
-
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
-import "./theme-liquid-carbon.css";
-import "./animations.css";
+import { AppProvider } from "@/lib/context/AppContext"; // <--- IMPORT THIS
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const ibmPlexSerif = IBM_Plex_Serif({
@@ -15,7 +12,7 @@ const ibmPlexSerif = IBM_Plex_Serif({
 
 export const metadata: Metadata = {
   title: "UdharPay",
-  description: "UdharPay is a modern banking platform for everyone.",
+  description: "Modern Banking Platform",
   icons: {
     icon: '/icons/logo.svg'
   }
@@ -28,7 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${ibmPlexSerif.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${ibmPlexSerif.variable} bg-black`}>
+        {/* WRAP EVERYTHING INSIDE APP PROVIDER */}
+        <AppProvider>
+          {children}
+        </AppProvider>
+      </body>
     </html>
   );
 }
